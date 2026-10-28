@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8084
+  description: Generated server url
+paths:
+  /transactions/withdrawals:
+    post:
+      tags:
+      - transaction-controller
+      operationId: withdraw
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleTransactionDto"
+  /transactions/payments:
+    post:
+      tags:
+      - transaction-controller
+      operationId: pay
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleTransactionDto"
+  /transactions/deposits:
+    post:
+      tags:
+      - transaction-controller
+      operationId: deposit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleTransactionDto"
+  /transactions/charges:
+    post:
+      tags:
+      - transaction-controller
+      operationId: charge
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleTransactionDto"
+  /transactions:
+    get:
+      tags:
+      - transaction-controller
+      operationId: findAll
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TransactionDto"
+  /transactions/{id}:
+    get:
+      tags:
+      - transaction-controller
+      operationId: findById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleTransactionDto"
+  /transactions/product/{productNumber}:
+    get:
+      tags:
+      - transaction-controller
+      operationId: findByProduct
+      parameters:
+      - name: productNumber
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TransactionDto"
+  /transactions/balance/credits/{creditNumber}:
+    get:
+      tags:
+      - transaction-controller
+      operationId: creditBalance
+      parameters:
+      - name: creditNumber
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleBalanceDto"
+  /transactions/balance/accounts/{accountNumber}:
+    get:
+      tags:
+      - transaction-controller
+      operationId: accountBalance
+      parameters:
+      - name: accountNumber
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SingleBalanceDto"
+components:
+  schemas:
+    OperationRequest:
+      type: object
+      properties:
+        productNumber:
+          type: string
+          minLength: 1
+        amount:
+          type: number
+          minimum: 0.01
+      required:
+      - amount
+      - productNumber
+    SingleTransactionDto: {}
+    TransactionDto:
+      type: object
+      properties:
+        id:
+          type: string
+        productNumber:
+          type: string
+        productType:
+          type: string
+          enum:
+          - ACCOUNT
+          - CREDIT
+        transactionType:
+          type: string
+          enum:
+          - DEPOSIT
+          - WITHDRAWAL
+          - PAYMENT
+          - CHARGE
+        amount:
+          type: number
+        balanceAfter:
+          type: number
+        date:
+          type: string
+          format: date-time
+    SingleBalanceDto: {}

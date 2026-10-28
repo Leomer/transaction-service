@@ -1,0 +1,253 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Integrator project
+meta:
+  id: wrk_c19c338c74b84ffa97229a6b110467ce
+  created: 1793136263454
+  modified: 1793136263454
+  description: ""
+collection:
+  - name: customer-service
+    meta:
+      id: fld_f3a21770726544b48eac95bc895eca7e
+      created: 1793136326203
+      modified: 1793142922562
+      sortKey: -1793136326203
+      description: ""
+  - name: account-service
+    meta:
+      id: fld_4c177df46e27463b85dbe17f66ba4137
+      created: 1793136459278
+      modified: 1793151358813
+      sortKey: -1793136459278
+      description: ""
+  - name: credit-service
+    meta:
+      id: fld_40926c21a9ce49ca99ecab9df1876bee
+      created: 1793140973647
+      modified: 1793152190215
+      sortKey: -1793140973647
+      description: ""
+  - name: transaction-service
+    meta:
+      id: fld_aa50b9afa9874453a2546891e9416d9b
+      created: 1793151351208
+      modified: 1793151351208
+      sortKey: -1793151351208
+      description: ""
+    children:
+      - url: http://localhost:8084/transactions/deposits
+        name: deposit transaction
+        meta:
+          id: req_47d3fc45848d483180bab685820ae970
+          created: 1793151368920
+          modified: 1793152323715
+          isPrivate: false
+          description: ""
+          sortKey: -1793151368920
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"productNumber": "53FDE706F2E548",
+            	"amount": 50
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/withdrawals
+        name: withDrawals transaction
+        meta:
+          id: req_e44a404bf80e44319a24d1716dbd3923
+          created: 1793152025766
+          modified: 1793152204447
+          isPrivate: false
+          description: ""
+          sortKey: -1793146173465.5
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"productNumber": "53FDE706F2E548",
+            	"amount": 30
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/charges
+        name: charge transaction
+        meta:
+          id: req_c3cc0ecb1b5147be9f0ae78d8cec0131
+          created: 1793152244959
+          modified: 1793152675618
+          isPrivate: false
+          description: ""
+          sortKey: -1793143575738.25
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"productNumber": "CR24B75D39F33F",
+            	"amount": 300
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions
+        name: find all transactions
+        meta:
+          id: req_9baa4cbaee4149e1949cdf8ee76dd6b0
+          created: 1793152372822
+          modified: 1793153318512
+          isPrivate: false
+          description: ""
+          sortKey: -1793142276874.625
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/payments
+        name: payment transaction
+        meta:
+          id: req_fc4ebbc376d24c5cba76e6befe09cd70
+          created: 1793152642213
+          modified: 1793152650887
+          isPrivate: false
+          description: ""
+          sortKey: -1793142926306.4375
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"productNumber": "CR24B75D39F33F",
+            	"amount": 30
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/balance/accounts/53FDE706F2E548
+        name: get balance account transaction
+        meta:
+          id: req_6da0b738a0dd454a939d8abc51333376
+          created: 1793152723153
+          modified: 1793153231270
+          isPrivate: false
+          description: ""
+          sortKey: -1793141627442.8125
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/balance/credits/CR24B75D39F33F
+        name: get balance credit transaction
+        meta:
+          id: req_558c636ab61b4f98b7d82026f441c590
+          created: 1793153261757
+          modified: 1793153295942
+          isPrivate: false
+          description: ""
+          sortKey: -1793141302726.9062
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/6ae153d6fb71c37139cce47a
+        name: find transactions id
+        meta:
+          id: req_49326085333d4645ac28bfe5137b68c9
+          created: 1793153333442
+          modified: 1793153357561
+          isPrivate: false
+          description: ""
+          sortKey: -1793141952158.7188
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:8084/transactions/product/53FDE706F2E548
+        name: find transactions products
+        meta:
+          id: req_c7a0511345f74ed69253bf214aa94d68
+          created: 1793153393147
+          modified: 1793153424287
+          isPrivate: false
+          description: ""
+          sortKey: -1793141789800.7656
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_36c5be0b969803f6aa04e14e7dc0d5bdec7da773
+    created: 1793136263459
+    modified: 1793136263459
+environments:
+  name: Base Environment
+  meta:
+    id: env_36c5be0b969803f6aa04e14e7dc0d5bdec7da773
+    created: 1793136263457
+    modified: 1793136263457
+    isPrivate: false
