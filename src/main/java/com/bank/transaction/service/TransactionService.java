@@ -1,8 +1,6 @@
 package com.bank.transaction.service;
 
-import com.bank.transaction.dto.BalanceDto;
-import com.bank.transaction.dto.OperationRequest;
-import com.bank.transaction.dto.TransactionDto;
+import com.bank.transaction.dto.*;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -16,4 +14,5 @@ public interface TransactionService {
     Flowable<TransactionDto> findAll();
     Single<TransactionDto> findById(String id);
     Flowable<TransactionDto> findByProduct(String productNumber);
+    Single<TransferResponse> transfer(TransferRequest request);
 }

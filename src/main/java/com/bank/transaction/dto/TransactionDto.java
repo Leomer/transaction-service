@@ -24,4 +24,6 @@ public class TransactionDto {
     private LocalDateTime date;
     /** Commission charged on this movement (zero when free). */
     private BigDecimal fee;
+    /** Counterpart account in a transfer. */
+    private String relatedProductNumber;
 }

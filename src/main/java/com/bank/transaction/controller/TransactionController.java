@@ -1,8 +1,6 @@
 package com.bank.transaction.controller;
 
-import com.bank.transaction.dto.BalanceDto;
-import com.bank.transaction.dto.OperationRequest;
-import com.bank.transaction.dto.TransactionDto;
+import com.bank.transaction.dto.*;
 import com.bank.transaction.service.TransactionService;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
@@ -66,5 +64,11 @@ public class TransactionController {
     @GetMapping("/product/{productNumber}")
     public Flowable<TransactionDto> findByProduct(@PathVariable String productNumber) {
         return transactionService.findByProduct(productNumber);
+    }
+
+    @PostMapping("/transfers")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Single<TransferResponse> transfer(@Valid @RequestBody TransferRequest request) {
+        return transactionService.transfer(request);
     }
 }

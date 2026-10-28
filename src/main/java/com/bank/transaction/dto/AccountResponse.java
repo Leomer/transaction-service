@@ -12,4 +12,5 @@ public class AccountResponse {
     private Integer monthlyMovementLimit;
     private Integer freeTransactionLimit;
     private BigDecimal transactionFee;
+    private String customerDocument;
 }

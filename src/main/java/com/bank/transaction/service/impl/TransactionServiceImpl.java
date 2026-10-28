@@ -2,10 +2,7 @@ package com.bank.transaction.service.impl;
 
 import com.bank.transaction.client.AccountClient;
 import com.bank.transaction.client.CreditClient;
-import com.bank.transaction.dto.AccountResponse;
-import com.bank.transaction.dto.BalanceDto;
-import com.bank.transaction.dto.OperationRequest;
-import com.bank.transaction.dto.TransactionDto;
+import com.bank.transaction.dto.*;
 import com.bank.transaction.exception.BusinessException;
 import com.bank.transaction.exception.NotFoundException;
 import com.bank.transaction.mapper.TransactionMapper;
@@ -26,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -113,6 +111,65 @@ public class TransactionServiceImpl implements TransactionService {
     public Flowable<TransactionDto> findByProduct(String productNumber) {
         return Flowable.fromPublisher(repository.findByProductNumberOrderByDateDesc(productNumber))
                 .map(TransactionMapper::toDto);
+    }
+
+    @Override
+    public Single<TransferResponse> transfer(TransferRequest request) {
+        log.info("Transfer of {} from {} to {}", request.getAmount(),
+                request.getSourceAccount(), request.getTargetAccount());
+        if (request.getSourceAccount().equals(request.getTargetAccount())) {
+            return Single.error(new BusinessException("Source and target accounts must be different"));
+        }
+        return Single.fromPublisher(accountClient.findByNumber(request.getSourceAccount()))
+                .flatMap(source -> Single.fromPublisher(accountClient.findByNumber(request.getTargetAccount()))
+                        .flatMap(target -> validateMovements(source)
+                                .flatMap(this::calculateFee)
+                                .flatMap(fee -> executeTransfer(request, source, target, fee))));
+    }
+
+    /** Debits the source, credits the target and refunds the source if the credit fails. */
+    private Single<TransferResponse> executeTransfer(TransferRequest request, AccountResponse source,
+                                                     AccountResponse target, BigDecimal fee) {
+        BigDecimal debit = request.getAmount().add(fee);
+        String scope = Objects.equals(source.getCustomerDocument(), target.getCustomerDocument())
+                ? "OWN" : "THIRD_PARTY";
+        return Single.fromPublisher(accountClient.updateBalance(request.getSourceAccount(), debit.negate()))
+                .flatMap(debited -> Single.fromPublisher(
+                                accountClient.updateBalance(request.getTargetAccount(), request.getAmount()))
+                        .onErrorResumeNext(ex -> refund(request.getSourceAccount(), debit, ex))
+                        .flatMap(credited -> saveTransfer(request, scope, fee,
+                                debited.getBalance(), credited.getBalance())));
+    }
+
+    /** Compensation: returns the debited amount to the source and keeps the original error. */
+    private Single<AccountResponse> refund(String sourceAccount, BigDecimal amount, Throwable cause) {
+        log.warn("Credit to target failed, refunding {} to {}: {}", amount, sourceAccount, cause.toString());
+        return Single.fromPublisher(accountClient.updateBalance(sourceAccount, amount))
+                .onErrorResumeNext(e -> {
+                    log.error("CRITICAL: refund of {} to {} failed, manual review required", amount, sourceAccount, e);
+                    return Single.error(cause);
+                })
+                .flatMap(refunded -> Single.<AccountResponse>error(cause));
+    }
+
+    private Single<TransferResponse> saveTransfer(TransferRequest request, String scope, BigDecimal fee,
+                                                  BigDecimal sourceBalance, BigDecimal targetBalance) {
+        LocalDateTime now = LocalDateTime.now();
+        Transaction out = Transaction.builder()
+                .productNumber(request.getSourceAccount())
+                .relatedProductNumber(request.getTargetAccount())
+                .productType(ProductType.ACCOUNT).transactionType(TransactionType.TRANSFER_OUT)
+                .amount(request.getAmount()).fee(fee).balanceAfter(sourceBalance).date(now).build();
+        Transaction in = Transaction.builder()
+                .productNumber(request.getTargetAccount())
+                .relatedProductNumber(request.getSourceAccount())
+                .productType(ProductType.ACCOUNT).transactionType(TransactionType.TRANSFER_IN)
+                .amount(request.getAmount()).fee(BigDecimal.ZERO).balanceAfter(targetBalance).date(now).build();
+        return Single.fromPublisher(repository.save(out))
+                .flatMap(savedOut -> Single.fromPublisher(repository.save(in))
+                        .map(savedIn -> TransferResponse.builder().scope(scope)
+                                .debit(TransactionMapper.toDto(savedOut))
+                                .credit(TransactionMapper.toDto(savedIn)).build()));
     }
 
     /** Deposit/withdrawal flow: validate, charge fee if needed, update balance, register. */
