@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -33,6 +34,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository repository;
     private final AccountClient accountClient;
     private final CreditClient creditClient;
+    private final Clock clock;
 
     @Value("${business.fixed-term-day}")
     private int fixedTermDay;
@@ -170,7 +172,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private Single<TransferResponse> saveTransfer(TransferRequest request, String scope, BigDecimal fee,
                                                   BigDecimal sourceBalance, BigDecimal targetBalance) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         Transaction out = Transaction.builder()
                 .productNumber(request.getSourceAccount())
                 .relatedProductNumber(request.getTargetAccount())
@@ -198,7 +200,7 @@ public class TransactionServiceImpl implements TransactionService {
                         Single.fromPublisher(accountClient.updateBalance(
                                         acc.getAccountNumber(), signedAmount.subtract(fee)))
                                 .flatMap(updated -> save(request, ProductType.ACCOUNT, type,
-                                        updated.getBalance().add(fee), fee))));
+                                        updated.getBalance(), fee))));
     }
 
     /** Fee is zero while the monthly free transactions are not exhausted. */
@@ -215,7 +217,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     /** Number of movements registered for the product in the current month. */
     private Single<Long> countMonthlyMovements(String productNumber) {
-        YearMonth month = YearMonth.now();
+        YearMonth month = YearMonth.now(clock);
         LocalDateTime from = month.atDay(1).atStartOfDay();
         LocalDateTime to = month.plusMonths(1).atDay(1).atStartOfDay();
         return Single.fromPublisher(
@@ -229,7 +231,7 @@ public class TransactionServiceImpl implements TransactionService {
             return Single.just(account); // checking accounts: unlimited
         }
         if ("FIXED_TERM".equals(account.getAccountType())
-                && LocalDate.now().getDayOfMonth() != fixedTermDay) {
+                && LocalDate.now(clock).getDayOfMonth() != fixedTermDay) {
             return Single.error(new BusinessException(
                     "Fixed-term accounts only allow movements on day " + fixedTermDay + " of the month"));
         }
@@ -255,7 +257,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .amount(request.getAmount())
                 .fee(fee)
                 .balanceAfter(balanceAfter)
-                .date(LocalDateTime.now())
+                .date(LocalDateTime.now(clock))
                 .build();
         return Single.fromPublisher(repository.save(tx)).map(TransactionMapper::toDto);
     }

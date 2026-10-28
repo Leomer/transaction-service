@@ -16,14 +16,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,6 +34,9 @@ import static org.mockito.Mockito.when;
 /** Unit tests for {@link TransactionServiceImpl}. */
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceImplTest {
+
+    @Spy
+    private Clock clock = Clock.fixed(Instant.parse("2026-10-15T10:00:00Z"), ZoneOffset.UTC);
 
     @Mock
     private TransactionRepository repository;
@@ -172,8 +175,7 @@ class TransactionServiceImplTest {
 
     @Test
     void fixedTermShouldRejectMovementOnWrongDay() {
-        int today = LocalDate.now().getDayOfMonth();
-        ReflectionTestUtils.setField(service, "fixedTermDay", today == 1 ? 2 : 1);
+        ReflectionTestUtils.setField(service, "fixedTermDay", 20); // clock says day 15
         when(accountClient.findByNumber("FT1"))
                 .thenReturn(Mono.just(account("FT1", "FIXED_TERM", 1, "100")));
 
@@ -183,7 +185,6 @@ class TransactionServiceImplTest {
 
     @Test
     void fixedTermShouldAllowFirstMovementOnTheConfiguredDay() {
-        ReflectionTestUtils.setField(service, "fixedTermDay", LocalDate.now().getDayOfMonth());
         when(accountClient.findByNumber("FT1"))
                 .thenReturn(Mono.just(account("FT1", "FIXED_TERM", 1, "100")));
         monthlyCountIs("FT1", 0);
@@ -196,7 +197,6 @@ class TransactionServiceImplTest {
 
     @Test
     void fixedTermShouldRejectSecondMovementOfTheMonth() {
-        ReflectionTestUtils.setField(service, "fixedTermDay", LocalDate.now().getDayOfMonth());
         when(accountClient.findByNumber("FT1"))
                 .thenReturn(Mono.just(account("FT1", "FIXED_TERM", 1, "100")));
         monthlyCountIs("FT1", 1);
@@ -318,7 +318,7 @@ class TransactionServiceImplTest {
         service.deposit(request("CHK1", "50"))
                 .test()
                 .assertValue(t -> new BigDecimal("1.50").compareTo(t.getFee()) == 0
-                        && new BigDecimal("150").compareTo(t.getBalanceAfter()) == 0)
+                        && new BigDecimal("148.50").compareTo(t.getBalanceAfter()) == 0)
                 .assertComplete();
     }
 
