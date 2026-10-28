@@ -22,4 +22,6 @@ public class TransactionDto {
     private BigDecimal amount;
     private BigDecimal balanceAfter;
     private LocalDateTime date;
+    /** Commission charged on this movement (zero when free). */
+    private BigDecimal fee;
 }

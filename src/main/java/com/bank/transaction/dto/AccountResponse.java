@@ -10,4 +10,6 @@ public class AccountResponse {
     private String accountType;
     private BigDecimal balance;
     private Integer monthlyMovementLimit;
+    private Integer freeTransactionLimit;
+    private BigDecimal transactionFee;
 }

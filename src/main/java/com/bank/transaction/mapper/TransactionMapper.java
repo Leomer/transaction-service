@@ -17,6 +17,7 @@ public final class TransactionMapper {
                 .amount(e.getAmount())
                 .balanceAfter(e.getBalanceAfter())
                 .date(e.getDate())
+                .fee(e.getFee())
                 .build();
     }
 }

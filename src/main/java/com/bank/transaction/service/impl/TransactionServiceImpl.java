@@ -115,14 +115,38 @@ public class TransactionServiceImpl implements TransactionService {
                 .map(TransactionMapper::toDto);
     }
 
-    /** Deposit/withdrawal flow: validate movements, update the balance, register the movement. */
+    /** Deposit/withdrawal flow: validate, charge fee if needed, update balance, register. */
     private Single<TransactionDto> accountOperation(OperationRequest request, TransactionType type,
                                                     BigDecimal signedAmount) {
         return Single.fromPublisher(accountClient.findByNumber(request.getProductNumber()))
                 .flatMap(this::validateMovements)
-                .flatMap(acc -> Single.fromPublisher(
-                        accountClient.updateBalance(acc.getAccountNumber(), signedAmount)))
-                .flatMap(updated -> save(request, ProductType.ACCOUNT, type, updated.getBalance()));
+                .flatMap(acc -> calculateFee(acc).flatMap(fee ->
+                        // amount and fee are applied in ONE atomic balance update
+                        Single.fromPublisher(accountClient.updateBalance(
+                                        acc.getAccountNumber(), signedAmount.subtract(fee)))
+                                .flatMap(updated -> save(request, ProductType.ACCOUNT, type,
+                                        updated.getBalance().add(fee), fee))));
+    }
+
+    /** Fee is zero while the monthly free transactions are not exhausted. */
+    private Single<BigDecimal> calculateFee(AccountResponse account) {
+        Integer freeLimit = account.getFreeTransactionLimit();
+        BigDecimal fee = account.getTransactionFee();
+        log.info("calculateFee: freeLimit={}, fee={}", freeLimit, fee);
+        if (freeLimit == null || fee == null) {
+            return Single.just(BigDecimal.ZERO);
+        }
+        return countMonthlyMovements(account.getAccountNumber())
+                .map(count -> count >= freeLimit ? fee : BigDecimal.ZERO);
+    }
+
+    /** Number of movements registered for the product in the current month. */
+    private Single<Long> countMonthlyMovements(String productNumber) {
+        YearMonth month = YearMonth.now();
+        LocalDateTime from = month.atDay(1).atStartOfDay();
+        LocalDateTime to = month.plusMonths(1).atDay(1).atStartOfDay();
+        return Single.fromPublisher(
+                repository.countByProductNumberAndDateBetween(productNumber, from, to));
     }
 
     /** Applies the monthly movement limit and the fixed-term day rule. */
@@ -136,11 +160,7 @@ public class TransactionServiceImpl implements TransactionService {
             return Single.error(new BusinessException(
                     "Fixed-term accounts only allow movements on day " + fixedTermDay + " of the month"));
         }
-        YearMonth month = YearMonth.now();
-        LocalDateTime from = month.atDay(1).atStartOfDay();
-        LocalDateTime to = month.plusMonths(1).atDay(1).atStartOfDay();
-        return Single.fromPublisher(
-                        repository.countByProductNumberAndDateBetween(account.getAccountNumber(), from, to))
+        return countMonthlyMovements(account.getAccountNumber())
                 .flatMap(count -> count >= limit
                         ? Single.<AccountResponse>error(new BusinessException(
                         "Monthly movement limit reached (" + limit + ")"))
@@ -149,11 +169,18 @@ public class TransactionServiceImpl implements TransactionService {
 
     private Single<TransactionDto> save(OperationRequest request, ProductType productType,
                                         TransactionType type, BigDecimal balanceAfter) {
+        return save(request, productType, type, balanceAfter, BigDecimal.ZERO);
+    }
+
+    private Single<TransactionDto> save(OperationRequest request, ProductType productType,
+                                        TransactionType type, BigDecimal balanceAfter,
+                                        BigDecimal fee) {
         Transaction tx = Transaction.builder()
                 .productNumber(request.getProductNumber())
                 .productType(productType)
                 .transactionType(type)
                 .amount(request.getAmount())
+                .fee(fee)
                 .balanceAfter(balanceAfter)
                 .date(LocalDateTime.now())
                 .build();
