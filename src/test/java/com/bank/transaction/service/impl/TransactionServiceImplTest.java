@@ -303,4 +303,55 @@ class TransactionServiceImplTest {
         when(repository.findByProductNumberOrderByDateDesc("CHK1")).thenReturn(Flux.just(tx()));
         service.findByProduct("CHK1").test().assertValueCount(1).assertComplete();
     }
+
+    @Test
+    void depositShouldChargeFeeWhenFreeTransactionsAreExceeded() {
+        AccountResponse acc = account("CHK1", "CHECKING", null, "100");
+        acc.setFreeTransactionLimit(2);
+        acc.setTransactionFee(new BigDecimal("1.50"));
+        when(accountClient.findByNumber("CHK1")).thenReturn(Mono.just(acc));
+        monthlyCountIs("CHK1", 2);
+        when(accountClient.updateBalance("CHK1", new BigDecimal("48.50")))
+                .thenReturn(Mono.just(account("CHK1", "CHECKING", null, "148.50")));
+        saveReturnsSameEntity();
+
+        service.deposit(request("CHK1", "50"))
+                .test()
+                .assertValue(t -> new BigDecimal("1.50").compareTo(t.getFee()) == 0
+                        && new BigDecimal("150").compareTo(t.getBalanceAfter()) == 0)
+                .assertComplete();
+    }
+
+    @Test
+    void withdrawalShouldNotChargeFeeWhileWithinFreeTransactions() {
+        AccountResponse acc = account("CHK1", "CHECKING", null, "100");
+        acc.setFreeTransactionLimit(5);
+        acc.setTransactionFee(new BigDecimal("1.50"));
+        when(accountClient.findByNumber("CHK1")).thenReturn(Mono.just(acc));
+        monthlyCountIs("CHK1", 1);
+        when(accountClient.updateBalance("CHK1", new BigDecimal("-30")))
+                .thenReturn(Mono.just(account("CHK1", "CHECKING", null, "70")));
+        saveReturnsSameEntity();
+
+        service.withdraw(request("CHK1", "30"))
+                .test()
+                .assertValue(t -> BigDecimal.ZERO.compareTo(t.getFee()) == 0)
+                .assertComplete();
+    }
+
+    @Test
+    void withdrawalShouldIncludeFeeInTheAtomicBalanceUpdate() {
+        AccountResponse acc = account("CHK1", "CHECKING", null, "100");
+        acc.setFreeTransactionLimit(2);
+        acc.setTransactionFee(new BigDecimal("1.50"));
+        when(accountClient.findByNumber("CHK1")).thenReturn(Mono.just(acc));
+        monthlyCountIs("CHK1", 3);
+        when(accountClient.updateBalance("CHK1", new BigDecimal("-31.50")))
+                .thenReturn(Mono.just(account("CHK1", "CHECKING", null, "68.50")));
+        saveReturnsSameEntity();
+
+        service.withdraw(request("CHK1", "30")).test().assertComplete();
+
+        verify(accountClient).updateBalance("CHK1", new BigDecimal("-31.50"));
+    }
 }
