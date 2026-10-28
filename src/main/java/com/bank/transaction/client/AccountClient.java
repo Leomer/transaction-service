@@ -20,8 +20,8 @@ public class AccountClient {
 
     private final WebClient webClient;
 
-    public AccountClient(@Value("${services.account.url}") String baseUrl) {
-        this.webClient = WebClient.builder().baseUrl(baseUrl).build();
+    public AccountClient(WebClient.Builder builder, @Value("${services.account.url}") String baseUrl) {
+        this.webClient = builder.clone().baseUrl(baseUrl).build();
     }
 
     /** Finds an account by number. */

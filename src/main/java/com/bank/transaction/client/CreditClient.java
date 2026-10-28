@@ -21,8 +21,8 @@ public class CreditClient {
 
     private final WebClient webClient;
 
-    public CreditClient(@Value("${services.credit.url}") String baseUrl) {
-        this.webClient = WebClient.builder().baseUrl(baseUrl).build();
+    public CreditClient(WebClient.Builder builder, @Value("${services.credit.url}") String baseUrl) {
+        this.webClient = builder.clone().baseUrl(baseUrl).build();
     }
 
     /** Finds an account by number. */
