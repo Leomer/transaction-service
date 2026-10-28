@@ -354,4 +354,16 @@ class TransactionServiceImplTest {
 
         verify(accountClient).updateBalance("CHK1", new BigDecimal("-31.50"));
     }
+
+    @Test
+    void findByProductBetweenShouldFailWhenRangeIsInvalid() {
+        service.findByProductBetween("A1", LocalDate.now(), LocalDate.now().minusDays(1))
+                .test().assertError(BusinessException.class);
+    }
+
+    @Test
+    void findLastByProductShouldReturnLatestMovements() {
+        when(repository.findTop10ByProductNumberOrderByDateDesc("CR1")).thenReturn(Flux.just(tx()));
+        service.findLastByProduct("CR1").test().assertValueCount(1).assertComplete();
+    }
 }

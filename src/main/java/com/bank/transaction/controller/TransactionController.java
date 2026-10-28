@@ -6,8 +6,11 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 
 @RestController
@@ -70,5 +73,18 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.CREATED)
     public Single<TransferResponse> transfer(@Valid @RequestBody TransferRequest request) {
         return transactionService.transfer(request);
+    }
+
+    @GetMapping("/product/{productNumber}/between")
+    public Flowable<TransactionDto> findBetween(
+            @PathVariable String productNumber,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return transactionService.findByProductBetween(productNumber, from, to);
+    }
+
+    @GetMapping("/product/{productNumber}/last")
+    public Flowable<TransactionDto> findLast(@PathVariable String productNumber) {
+        return transactionService.findLastByProduct(productNumber);
     }
 }

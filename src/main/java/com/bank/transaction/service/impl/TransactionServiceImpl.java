@@ -127,6 +127,22 @@ public class TransactionServiceImpl implements TransactionService {
                                 .flatMap(fee -> executeTransfer(request, source, target, fee))));
     }
 
+    @Override
+    public Flowable<TransactionDto> findByProductBetween(String productNumber, LocalDate from, LocalDate to) {
+        if (from == null || to == null || to.isBefore(from)) {
+            return Flowable.error(new BusinessException("Invalid date range"));
+        }
+        return Flowable.fromPublisher(repository.findByProductNumberAndDateBetweenOrderByDateDesc(
+                        productNumber, from.atStartOfDay(), to.plusDays(1).atStartOfDay()))
+                .map(TransactionMapper::toDto);
+    }
+
+    @Override
+    public Flowable<TransactionDto> findLastByProduct(String productNumber) {
+        return Flowable.fromPublisher(repository.findTop10ByProductNumberOrderByDateDesc(productNumber))
+                .map(TransactionMapper::toDto);
+    }
+
     /** Debits the source, credits the target and refunds the source if the credit fails. */
     private Single<TransferResponse> executeTransfer(TransferRequest request, AccountResponse source,
                                                      AccountResponse target, BigDecimal fee) {

@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public interface TransactionRepository extends ReactiveMongoRepository<Transaction, String> {
 
     Flux<Transaction> findByProductNumberOrderByDateDesc(String productNumber);
-
     Mono<Long> countByProductNumberAndDateBetween(String productNumber, LocalDateTime from, LocalDateTime to);
+    Flux<Transaction> findByProductNumberAndDateBetweenOrderByDateDesc(String productNumber, LocalDateTime from, LocalDateTime to);
+    Flux<Transaction> findTop10ByProductNumberOrderByDateDesc(String productNumber);
 }
