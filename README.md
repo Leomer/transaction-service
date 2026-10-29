@@ -36,9 +36,37 @@ Spring Boot, WebFlux, RxJava 3, MongoDB.
 | GET | /transactions | List all transactions |
 | GET | /transactions/{id} | Find a transaction |
 | GET | /transactions/product/{productNumber} | Movements of a product (latest first) |
+| POST | /transactions/transfers | Transfer between accounts (own or third party) |
+| GET | /transactions/product/{n}/between?from=&to= | Movements in a date range |
+| GET | /transactions/product/{n}/last | Latest 10 movements |
 
 Request body for operations:
 { "productNumber": "...", "amount": 100.00 }
+
+## Transfers
+- Same endpoint for own and third-party accounts; the response says `OWN` or `THIRD_PARTY`.
+- The target is checked before debiting the source.
+- If the credit to the target fails, the source is refunded (compensation).
+  If the refund also fails, a CRITICAL log is written.
+- Two movements are stored: `TRANSFER_OUT` and `TRANSFER_IN`.
+
+## Fees
+Each account has a number of free transactions per month. Beyond it, each
+deposit or withdrawal pays a fee, applied in the same atomic balance update.
+The fee is stored in the movement (`fee`), not as a separate row.
+
+## Kafka
+| Topic | Direction | Purpose |
+|---|---|---|
+| debit-payment-requests | consumes | Each request is processed as a withdrawal on the card's primary account |
+| debit-payment-results | publishes | `COMPLETED\|paymentId\|balanceAfter` or `FAILED\|paymentId\|reason` |
+
+## Third-party payments
+Any credit product can be paid by anyone with its number; the payer is not
+validated by design (Part III requirement).
+
+## Design patterns
+- **Clock injection:** time is a dependency, so time-based rules are testable.
 
 ## Documentation
 See the `docs/` folder: OpenAPI contract and sequence diagram.
